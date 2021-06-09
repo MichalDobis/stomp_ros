@@ -50,7 +50,7 @@ namespace stomp_kinematics
 {
 
 /**
- * @namespace stomp_moveit::utils::kinematics
+ * @namespace stomp_kinematics::kinematics
  * @brief Utility functions related to finding Inverse Kinematics solutions
  */
 namespace kinematics
@@ -62,7 +62,7 @@ namespace kinematics
   MOVEIT_CLASS_FORWARD(IKSolver);
 
   /**
-   * @class stomp_moveit::utils::kinematics::IKSolver
+   * @class stomp_kinematics::kinematics::IKSolver
    * @brief Wrapper around an IK solver implementation.
    */
   class IKSolver
@@ -234,8 +234,22 @@ namespace kinematics
                                        const Eigen::ArrayXi& constrained_dofs,const Eigen::VectorXd& joint_pose,
                                        Eigen::MatrixXd& jacb_nullspace);
 
+  class FKSolver {
+  public:
+      FKSolver(moveit::core::RobotModelConstPtr robot_model_ptr, const std::string& group_name);
+      bool solve(const Eigen::VectorXd& joint_pose, Eigen::Isometry3d &tool_pose, std::string tool_link="");
+
+      bool computeCartesianPath(const Eigen::VectorXd& start_pose, const Eigen::VectorXd& end_pose,  Eigen::MatrixXd &trajectory, int num_of_steps, double jumb_treshold);
+  private:
+      moveit::core::RobotModelConstPtr robot_model_;
+      moveit::core::RobotStatePtr state_;
+      std::string group_;
+  };
+
+  typedef std::shared_ptr<FKSolver> FKSolverPtr; /**< Defines a boost shared ptr for type Task */
+
 } // kinematics
-} // stomp_moveit
+} // stomp_kinematics
 
 
 

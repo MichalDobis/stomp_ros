@@ -108,6 +108,7 @@ StompPlanner::StompPlanner(const std::string& group,const XmlRpc::XmlRpcValue& c
     config_(config),
     robot_model_(model),
     ik_solver_(new stomp_kinematics::kinematics::IKSolver(model,group)),
+    fk_solver_(new stomp_kinematics::kinematics::FKSolver(model,group)),
     ph_(new ros::NodeHandle("~"))
 {
   setup();
@@ -147,7 +148,7 @@ void StompPlanner::setup()
       throw std::logic_error(msg);
     }
 
-    stomp_.reset(new stomp_core::Stomp(stomp_config_,task_));
+    stomp_.reset(new stomp_core::Stomp(stomp_config_,task_, fk_solver_));
   }
   catch(XmlRpc::XmlRpcException& e)
   {

@@ -32,6 +32,7 @@
 #include <stomp_core/utils.h>
 #include <numeric>
 #include "stomp_core/stomp.h"
+#include <stomp_kinematics/kinematics.h>
 
 static const double DEFAULT_NOISY_COST_IMPORTANCE_WEIGHT = 1.0; /**< Default noisy cost importance weight */
 static const double MIN_COST_DIFFERENCE = 1e-8; /**< Minimum cost difference allowed during probability calculation */
@@ -139,6 +140,30 @@ bool computeMinCostTrajectory(const std::vector<double>& first,
 }
 
 /**
+ * @brief Compute a cartesian linear interpolated trajectory given a start and end state
+ * @param first             The start position
+ * @param last              The final position
+ * @param num_timesteps     The number of timesteps
+ * @param trajectory_joints The returned linear interpolated trajectory
+ */
+static bool computeCartesianLinearInterpolation(const std::vector<double>& first,const std::vector<double>& last,
+                                       int num_timesteps,
+                                       Eigen::MatrixXd& trajectory_joints, stomp_kinematics::kinematics::FKSolverPtr fk_solver)
+{
+
+    Eigen::VectorXd start_pose = Eigen::VectorXd::Map(first.data(),first.size());
+    Eigen::VectorXd end_pose = Eigen::VectorXd::Map(last.data(),last.size());
+
+    fk_solver->computeCartesianPath(start_pose,end_pose, trajectory_joints,num_timesteps, 0);
+//    Eigen::Affine3d first_fk, last_fk;
+//    fk_solver->solve(first, first_fk);
+//    fk_solver->solve(first, last_fk);
+
+
+    return true;
+}
+
+/**
  * @brief Compute the parameters control costs
  * @param parameters            The parameters used to compute the control cost
  * @param dt                    The timestep in seconds
@@ -169,9 +194,10 @@ void computeParametersControlCosts(const Eigen::MatrixXd& parameters,
 namespace stomp_core {
 
 
-Stomp::Stomp(const StompConfiguration& config,TaskPtr task):
+Stomp::Stomp(const StompConfiguration& config,TaskPtr task,stomp_kinematics::kinematics::FKSolverPtr fk_solver):
     config_(config),
-    task_(task)
+    task_(task),
+    fk_solver_(fk_solver)
 {
 
   resetVariables();
@@ -408,9 +434,17 @@ bool Stomp::computeInitialTrajectory(const std::vector<double>& first,const std:
 
       valid = computeMinCostTrajectory(first,last,control_cost_matrix_R_padded_,inv_control_cost_matrix_R_,parameters_optimized_);
       break;
+
+    case TrajectoryInitializations::LINEAR_CARTESIAN:
+
+      valid = computeCartesianLinearInterpolation(first,last,config_.num_timesteps,parameters_optimized_, fk_solver_);
+      break;
   }
 
-  return valid;
+    ROS_INFO("parameter optimized rows %d, cols %d", parameters_optimized_.rows(), parameters_optimized_.cols());
+
+    ROS_INFO_STREAM(parameters_optimized_);
+    return valid;
 }
 
 bool Stomp::cancel()

@@ -167,7 +167,7 @@ protected:
   // robot model
   moveit::core::RobotModelConstPtr robot_model_;
   stomp_kinematics::kinematics::IKSolverPtr ik_solver_;
-
+  stomp_kinematics::kinematics::FKSolverPtr fk_solver_;
   // ros tasks
   ros::NodeHandlePtr ph_;
 };
