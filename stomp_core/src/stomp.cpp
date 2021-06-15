@@ -150,17 +150,10 @@ static bool computeCartesianLinearInterpolation(const std::vector<double>& first
                                        int num_timesteps,
                                        Eigen::MatrixXd& trajectory_joints, stomp_kinematics::kinematics::FKSolverPtr fk_solver)
 {
-
     Eigen::VectorXd start_pose = Eigen::VectorXd::Map(first.data(),first.size());
     Eigen::VectorXd end_pose = Eigen::VectorXd::Map(last.data(),last.size());
 
-    fk_solver->computeCartesianPath(start_pose,end_pose, trajectory_joints,num_timesteps, 0);
-//    Eigen::Affine3d first_fk, last_fk;
-//    fk_solver->solve(first, first_fk);
-//    fk_solver->solve(first, last_fk);
-
-
-    return true;
+    return fk_solver->computeCartesianPath(start_pose,end_pose, trajectory_joints,num_timesteps, 0);
 }
 
 /**
@@ -440,11 +433,7 @@ bool Stomp::computeInitialTrajectory(const std::vector<double>& first,const std:
       valid = computeCartesianLinearInterpolation(first,last,config_.num_timesteps,parameters_optimized_, fk_solver_);
       break;
   }
-
-    ROS_INFO("parameter optimized rows %d, cols %d", parameters_optimized_.rows(), parameters_optimized_.cols());
-
-    ROS_INFO_STREAM(parameters_optimized_);
-    return valid;
+   return valid;
 }
 
 bool Stomp::cancel()

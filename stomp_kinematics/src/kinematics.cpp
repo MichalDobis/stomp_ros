@@ -751,7 +751,6 @@ bool computeJacobianNullSpace(moveit::core::RobotStatePtr state,std::string grou
         for (int i = 0; i < robotTrajectory.joint_trajectory.points.size(); i++) {
             auto &point = robotTrajectory.joint_trajectory.points[i];
             trajectory.col(i) = Eigen::VectorXd::Map(point.positions.data(),point.positions.size());
-            ROS_INFO_STREAM(Eigen::VectorXd::Map(point.positions.data(),point.positions.size()));
         }
 
         return (fabs(fraction - 1.0) < 0.001);
