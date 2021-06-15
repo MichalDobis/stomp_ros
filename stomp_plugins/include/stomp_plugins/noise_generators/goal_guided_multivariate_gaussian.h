@@ -29,7 +29,7 @@
 
 #include <stomp_moveit/noise_generators/stomp_noise_generator.h>
 #include <stomp_moveit/utils/multivariate_gaussian.h>
-#include "stomp_moveit/utils/kinematics.h"
+#include "stomp_kinematics/kinematics.h"
 
 
 namespace stomp_moveit

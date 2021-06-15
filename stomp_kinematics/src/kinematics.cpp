@@ -24,7 +24,7 @@
  * limitations under the License.
  */
 
-#include <stomp_moveit/utils/kinematics.h>
+#include <stomp_kinematics/kinematics.h>
 #include <kdl_parser/kdl_parser.hpp>
 #include <eigen_conversions/eigen_kdl.h>
 #include <math.h>

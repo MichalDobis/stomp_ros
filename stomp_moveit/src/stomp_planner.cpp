@@ -29,7 +29,7 @@
 #include <class_loader/class_loader.hpp>
 #include <stomp_core/utils.h>
 #include <moveit/trajectory_processing/iterative_time_parameterization.h>
-#include <stomp_moveit/utils/kinematics.h>
+#include <stomp_kinematics/kinematics.h>
 #include <stomp_moveit/utils/polynomial.h>
 
 static const std::string DEBUG_NS = "stomp_planner";
