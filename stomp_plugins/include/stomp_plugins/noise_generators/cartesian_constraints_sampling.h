@@ -105,18 +105,17 @@ protected:
                    const stomp_core::StompConfiguration &config,
                    moveit_msgs::MoveItErrorCodes& error_code);
 
-  virtual bool setupGoalConstraints(const planning_scene::PlanningSceneConstPtr& planning_scene,
+  virtual bool setupRobotState(const planning_scene::PlanningSceneConstPtr& planning_scene,
                    const moveit_msgs::MotionPlanRequest &req,
                    const stomp_core::StompConfiguration &config,
                    moveit_msgs::MoveItErrorCodes& error_code);
-
   /**
    * @brief Genereates a random tool pose by apply noise on the redundant axis to a reference tool pose;
    * @param reference_joint_pose  Joint position used in computing the reference tool pose with FK
    * @param result       The joint position corresponding to the randomized tool pose
    * @return  True if succeded, false otherwise
    */
-  virtual bool applyCartesianNoise(const Eigen::VectorXd& reference_joint_pose, Eigen::VectorXd& result, const Eigen::VectorXd &tol);
+  virtual bool applyCartesianNoise(const Eigen::VectorXd& reference_joint_pose, Eigen::VectorXd& result);
 
 protected:
 
@@ -124,24 +123,23 @@ protected:
   std::string name_;
   std::string group_;
 
-  // goal constraints
+  // tool link and ik tolerance
   std::string tool_link_;
   Eigen::VectorXd tool_goal_tolerance_;
 
   // ros parameters
-  std::vector<double> stddev_;                                        /**< @brief The standard deviations applied to each joint, [num_dimensions x 1 **/
+  std::vector<double> stddev_;                                        /**< @brief The standard deviations applied to each cartesian DOF **/
 
   // noisy trajectory generation
   Eigen::VectorXd raw_noise_;                                         /**< @brief The noise vector **/
 
   // random goal generation
-  boost::shared_ptr<RandomGenerator> goal_rand_generator_;            /**< @brief Random generator for the tool goal pose **/
+  boost::shared_ptr<RandomGenerator> goal_rand_generator_;            /**< @brief Random generator for the tool pose **/
 
   // robot
   moveit::core::RobotModelConstPtr robot_model_;
   moveit::core::RobotStatePtr state_;
   stomp_moveit::utils::kinematics::IKSolverPtr ik_solver_;
-
 };
 
 } /* namespace noise_generators */

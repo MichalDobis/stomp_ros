@@ -75,6 +75,13 @@ bool CartesianConstraintsSampling::initialize(moveit::core::RobotModelConstPtr r
 
   // trajectory noise generation
   stddev_.resize(CARTESIAN_DOF_SIZE);
+
+  // creating default cartesian tolerance
+  tool_goal_tolerance_.resize(CARTESIAN_DOF_SIZE);
+  double ptol = DEFAULT_IK_POS_TOLERANCE;
+  double rtol = DEFAULT_IK_ROT_TOLERANCE;
+  tool_goal_tolerance_ << ptol, ptol, ptol, rtol, rtol, rtol;
+
   return configure(config);
 }
 
@@ -119,8 +126,7 @@ bool CartesianConstraintsSampling::setMotionPlanRequest(const planning_scene::Pl
                  moveit_msgs::MoveItErrorCodes& error_code)
 {
   bool succeed = setupNoiseGeneration(planning_scene,req,config,error_code) &&
-      setupGoalConstraints(planning_scene,req,config,error_code);
-
+          setupRobotState(planning_scene,req,config,error_code);
   return succeed;
 }
 
@@ -154,7 +160,6 @@ bool CartesianConstraintsSampling::setupNoiseGeneration(const planning_scene::Pl
   double max_val = covariance.array().abs().matrix().maxCoeff();
   covariance /= max_val;
 
-
   // preallocating noise data
   raw_noise_ = Eigen::VectorXd::Zero(CARTESIAN_DOF_SIZE);
 
@@ -163,70 +168,22 @@ bool CartesianConstraintsSampling::setupNoiseGeneration(const planning_scene::Pl
   return true;
 }
 
-
-bool CartesianConstraintsSampling::setupGoalConstraints(const planning_scene::PlanningSceneConstPtr& planning_scene,
+bool CartesianConstraintsSampling::setupRobotState(const planning_scene::PlanningSceneConstPtr& planning_scene,
                                                const moveit_msgs::MotionPlanRequest &req,
                                                const stomp_core::StompConfiguration &config,
                                                moveit_msgs::MoveItErrorCodes& error_code)
 {
-  using namespace Eigen;
   using namespace moveit::core;
   using namespace utils::kinematics;
 
   // robot state
   const JointModelGroup* joint_group = robot_model_->getJointModelGroup(group_);
-  int num_joints = joint_group->getActiveJointModels().size();
   tool_link_ = joint_group->getLinkModelNames().back();
   state_.reset(new RobotState(robot_model_));
   robotStateMsgToRobotState(req.start_state,*state_);
 
   // update kinematic model
   ik_solver_->setKinematicState(*state_);
-
-  // storing cartesian goal tolerance from motion plan request
-  const std::vector<moveit_msgs::Constraints>& goals = req.goal_constraints;
-  if(goals.empty())
-  {
-    ROS_ERROR("A goal constraint was not provided");
-    error_code.val = error_code.INVALID_GOAL_CONSTRAINTS;
-    return false;
-  }
-  bool found_valid = false;
-  for(const auto& g: goals)
-  {
-    if(utils::kinematics::isCartesianConstraints(g))
-    {
-      // decoding goal
-      state_->updateLinkTransforms();
-      Eigen::Affine3d start_tool_pose = state_->getGlobalLinkTransform(tool_link_);
-      boost::optional<moveit_msgs::Constraints> cartesian_constraints = utils::kinematics::curateCartesianConstraints(g,start_tool_pose);
-      if(cartesian_constraints.is_initialized())
-      {
-        Eigen::Affine3d tool_goal_pose;
-        found_valid = utils::kinematics::decodeCartesianConstraint(robot_model_,cartesian_constraints.get(),
-                                                                   tool_goal_pose,tool_goal_tolerance_,robot_model_->getRootLinkName());
-      }
-    }
-
-    if(found_valid)
-    {
-      ROS_DEBUG_STREAM(getName()<< " using tool tolerances of "<< tool_goal_tolerance_.transpose());
-      break;
-    }
-  }
-
-  if(!found_valid)
-  {
-    ROS_DEBUG("%s a cartesian goal pose in MotionPlanRequest was not provided,using default cartesian tolerance",getName().c_str());
-
-    // creating default cartesian tolerance
-    tool_goal_tolerance_.resize(CARTESIAN_DOF_SIZE);
-    double ptol = DEFAULT_IK_POS_TOLERANCE;
-    double rtol = DEFAULT_IK_ROT_TOLERANCE;
-    tool_goal_tolerance_ << ptol, ptol, ptol, rtol, rtol, rtol;
-  }
-
-  error_code.val = error_code.SUCCESS;
 
   return true;
 }
@@ -251,9 +208,8 @@ bool CartesianConstraintsSampling::generateNoise(const Eigen::MatrixXd& paramete
 
   for(auto t = 0u; t < parameters.cols();t++)
   {
-    Eigen::VectorXd tol = VectorXd::Map(stddev_.data(),stddev_.size());
     Eigen::VectorXd result = Eigen::VectorXd::Zero(parameters.rows());
-    if(!applyCartesianNoise(parameters.col(t),result,tol))
+    if(!applyCartesianNoise(parameters.col(t),result))
     {
       ROS_DEBUG("%s could not solve ik, returning noiseless goal pose",getName().c_str());
       parameters_noise.col(t) = parameters.col(t);
@@ -269,7 +225,7 @@ bool CartesianConstraintsSampling::generateNoise(const Eigen::MatrixXd& paramete
   return true;
 }
 
-bool CartesianConstraintsSampling::applyCartesianNoise(const Eigen::VectorXd& reference_joint_pose, Eigen::VectorXd& result, const Eigen::VectorXd &tol)
+bool CartesianConstraintsSampling::applyCartesianNoise(const Eigen::VectorXd& reference_joint_pose, Eigen::VectorXd& result)
 {
   using namespace Eigen;
   using namespace moveit::core;
@@ -279,11 +235,12 @@ bool CartesianConstraintsSampling::applyCartesianNoise(const Eigen::VectorXd& re
 
   for(auto d = 0u; d < raw_noise_.size(); d++)
   {
-      raw_noise_(d) = stddev_[d]*(*goal_rand_generator_)();
+    raw_noise_(d) = stddev_[d]*(*goal_rand_generator_)();
   }
 
   state_->setJointGroupPositions(joint_group,reference_joint_pose);
   Eigen::Affine3d tool_pose = state_->getFrameTransform(tool_link_);
+
   auto& n = raw_noise_;
   Affine3d noisy_tool_pose = tool_pose * Translation3d(Vector3d(n(0),n(1),n(2)))*
                                AngleAxisd(n(3),Vector3d::UnitX())*AngleAxisd(n(4),Vector3d::UnitY())*AngleAxisd(n(5),Vector3d::UnitZ());
