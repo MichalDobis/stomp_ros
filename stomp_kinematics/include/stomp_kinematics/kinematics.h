@@ -46,9 +46,7 @@ namespace EigenSTL
   typedef std::vector<Eigen::Affine3d, Eigen::aligned_allocator<Eigen::Affine3d>> vector_Affine3d;
 }
 
-namespace stomp_moveit
-{
-namespace utils
+namespace stomp_kinematics
 {
 
 /**
@@ -237,7 +235,6 @@ namespace kinematics
                                        Eigen::MatrixXd& jacb_nullspace);
 
 } // kinematics
-} // utils
 } // stomp_moveit
 
 

@@ -85,13 +85,11 @@ std::shared_ptr<TRAC_IK::TRAC_IK> createTRACIKSolver(moveit::core::RobotModelCon
   return solver;
 }
 
-namespace stomp_moveit
-{
-namespace utils
+namespace stomp_kinematics
 {
 
 /**
- * @namespace stomp_moveit::utils::kinematics
+ * @namespace stomp_kinematics::kinematics
  * @brief Utility functions related to finding Inverse Kinematics solutions
  */
 namespace kinematics
@@ -706,7 +704,6 @@ bool computeJacobianNullSpace(moveit::core::RobotStatePtr state,std::string grou
 }
 
 } // kinematics
-} // utils
 } // stomp_moveit
 
 

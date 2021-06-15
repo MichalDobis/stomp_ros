@@ -168,7 +168,7 @@ protected:
   // robot
   moveit::core::RobotModelConstPtr robot_model_;
   moveit::core::RobotStatePtr state_;
-  stomp_moveit::utils::kinematics::IKSolverPtr ik_solver_;
+  stomp_kinematics::kinematics::IKSolverPtr ik_solver_;
 
 };
 
